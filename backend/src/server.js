@@ -2,6 +2,7 @@ import express from 'express';
 //const express = require("express");
 import cors from "cors";
 import dotenv from "dotenv"; //dotenv package install to access .env content
+import path from 'path';
 
 import routesNotes from "./routes/routesNotes.js"
 import { connectDB } from './config/db.js';
@@ -13,16 +14,19 @@ dotenv.config(); //call authentication from dotenv
 
 const app = express();
 const PORT = process.env.PORT || 5001
-
+const __dirname= path.resolve()
 
 //use of middleware: authentication check, rate limiting(control how ofter someone can do somthing on a websit or app
 // (eg. refresh a page, make a request to an API or try to login))
 //middleware
+
+if(process.env.NODE_ENV!=="production"){
 app.use(
         cors({
     origin:"http://localhost:5173",
 })
 );
+}
 app.use(express.json()); // this middleware will parse JSON bodies: req.body
 app.use(rateLimiter);
 
@@ -34,6 +38,17 @@ app.use(rateLimiter);
 // })
 
 app.use("/api/notes", routesNotes);
+
+if(process.env.NODE_ENV==="production"){
+    
+app.use(express.static(path.join(__dirname,"../frontend/dist")));
+
+app.get("*", (req, res)=> {
+    res.sendFile(path.join(__dirname,"../frontend","dist","index.html"));   
+});
+
+}
+
 
 connectDB().then(() => {
 app.listen(PORT, () => {
